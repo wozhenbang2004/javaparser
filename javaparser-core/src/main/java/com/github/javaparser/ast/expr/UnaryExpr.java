@@ -101,8 +101,8 @@ public class UnaryExpr extends Expression implements NodeWithExpression<UnaryExp
     @Generated("com.github.javaparser.generator.core.node.MainConstructorGenerator")
     public UnaryExpr(TokenRange tokenRange, Expression expression, Operator operator) {
         super(tokenRange);
-        setExpression(expression);
         setOperator(operator);
+        setExpression(expression);
         customInitialization();
     }
 
