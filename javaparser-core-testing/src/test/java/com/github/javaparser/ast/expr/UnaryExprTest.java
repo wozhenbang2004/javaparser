@@ -23,18 +23,45 @@ package com.github.javaparser.ast.expr;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.github.javaparser.JavaParserAdapter;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.observer.AstObserverAdapter;
 import com.github.javaparser.ast.stmt.AssertStmt;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class UnaryExprTest {
 
     private final JavaParserAdapter parser = StaticJavaParser.newParserAdapter();
+
+    @ParameterizedTest
+    @CsvSource({"LOGICAL_COMPLEMENT, !value", "POSTFIX_INCREMENT, value++"})
+    void observerCanPrintNewUnaryParent(UnaryExpr.Operator operator, String expected) {
+        NameExpr expression = new NameExpr("value");
+        List<String> parents = new ArrayList<>();
+        expression.register(new AstObserverAdapter() {
+            @Override
+            public void parentChange(Node observedNode, Node previousParent, Node newParent) {
+                parents.add(newParent.toString());
+            }
+        });
+
+        UnaryExpr unary = new UnaryExpr(expression, operator);
+
+        assertEquals(Collections.singletonList(expected), parents);
+        assertSame(unary, expression.getParentNode().get());
+        assertSame(expression, unary.getExpression());
+    }
 
     @Test
     void unaryPlusTest() {
