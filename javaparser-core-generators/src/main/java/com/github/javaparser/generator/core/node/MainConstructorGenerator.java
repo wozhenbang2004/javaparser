@@ -22,6 +22,7 @@
 package com.github.javaparser.generator.core.node;
 
 import static com.github.javaparser.StaticJavaParser.parseExplicitConstructorInvocationStmt;
+import static com.github.javaparser.StaticJavaParser.parseStatement;
 import static com.github.javaparser.utils.CodeGenerationUtils.f;
 
 import com.github.javaparser.TokenRange;
@@ -29,7 +30,9 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
+import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.generator.NodeGenerator;
 import com.github.javaparser.metamodel.BaseNodeMetaModel;
 import com.github.javaparser.metamodel.PropertyMetaModel;
@@ -60,7 +63,13 @@ public class MainConstructorGenerator extends NodeGenerator {
         for (PropertyMetaModel parameter : nodeMetaModel.getConstructorParameters()) {
             constructor.addParameter(parameter.getTypeNameForSetter(), parameter.getName());
             if (nodeMetaModel.getDeclaredPropertyMetaModels().contains(parameter)) {
-                body.addStatement(f("%s(%s);", parameter.getSetterMethodName(), parameter.getName()));
+                Statement setter = parseStatement(f("%s(%s);", parameter.getSetterMethodName(), parameter.getName()));
+                if (nodeMetaModel.is(UnaryExpr.class) && parameter.getName().equals("operator")) {
+                    // The operand's parent observers may inspect the operator during construction.
+                    body.getStatements().addFirst(setter);
+                } else {
+                    body.addStatement(setter);
+                }
             } else {
                 superCall.append(parameter.getName());
             }
